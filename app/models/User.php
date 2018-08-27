@@ -3,6 +3,7 @@
 use Phalcon\Mvc\Model;
 use Phalcon\Validation;
 use Phalcon\Validation\Validator\Email as EmailValidator;
+use Phalcon\Validation\Validator\Uniqueness;
 
 class User extends Model
 {
@@ -108,10 +109,32 @@ class User extends Model
             new EmailValidator(
                 [
                     'model'   => $this,
-                    'message' => 'Please enter a correct email address',
+                    'message' => 'Por favor ingrese un correo valido',
                 ]
             )
         );
+
+        $validator->add(
+            'email',
+            new Uniqueness(
+                [
+                    'model' => $this,
+                    'message' => 'El correo ingresado ya está en uso'
+                ]
+            )
+        );
+
+        if ($this->getEmail === "Old") {
+            $message = new Message(
+                "Sorry, old robots are not allowed anymore",
+                "type",
+                "MyType"
+            );
+
+            $this->appendMessage($message);
+
+            return false;
+        }
 
         return $this->validate($validator);
     }

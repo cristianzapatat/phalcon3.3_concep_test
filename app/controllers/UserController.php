@@ -6,9 +6,37 @@ use Phalcon\Paginator\Adapter\Model as PaginatorModel;
 
 class UserController extends ControllerBase
 {
+    public function listAction() {
+        $this->getDataPaginator();
+        // The data set to paginate
+        $users  = User::find();
+        // Create a Model paginator
+        $paginator = new PaginatorModel(
+            [
+                'data'  => $users,
+                'limit' => $this->limit,
+                'page'  => $this->page
+            ]
+        );
+        $page = $paginator->getPaginate();
+        return $this->sendResponseHttp($page);
+    }
 
-    public function indexAction()
-    {
+    public function saveAction() {
+        $body = $this->request->getJsonRawBody();
+
+        $user = new User();
+        $user->email = $body->email;
+        $user->passwordl = $body->pass;
+
+        if ($user->save()) {
+            return $this->sendResponseHttp($user);
+        } else {
+            return $this->sendResponseHttp($user->getMessages(), true, 409, 'SQL');
+        }
+    }
+
+    public function indexAction() {
         /*echo json_encode(Users::find([
             'limit' => 1
         ]));*/
@@ -50,26 +78,7 @@ class UserController extends ControllerBase
         // Get the paginated results
         $page = $paginator->getPaginate();
         //$this->view->disable();
-        $this->sendResponse($page);
+        return $this->sendResponse($page);
     }
-
-    public function listAction() {
-        // The data set to paginate
-        $users = User::find();
-
-        // Create a Model paginator
-        $paginator = new PaginatorModel(
-            [
-                'data'  => $users,
-                'limit' => 10,
-                'page'  => 1
-            ]
-        );
-
-        $page = $paginator->getPaginate();
-
-        $this->sendResponse($page);
-    }
-
 }
 

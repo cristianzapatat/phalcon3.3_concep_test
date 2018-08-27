@@ -8,16 +8,23 @@ class UserRoutes extends RouterGroup {
 
         $this->setPaths(
             [
-                'controller'    => 'user'
+                'controller' => 'user'
             ]
         );
 
-        $this->setPrefix('/api');
+        $this->setPrefix('/user');
 
         $this->addGet(
-            '/list',
+            '/{0,1}((\?(.+))+|\?{0,1})',
             [
                 'action' => 'list'
+            ]
+        );
+
+        $this->addPost(
+            '(/save(/{0,1})|/{0,1})',
+            [
+                'action' => 'save'
             ]
         );
     }
