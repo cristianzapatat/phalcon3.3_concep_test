@@ -3,6 +3,14 @@
 $router = $di->getRouter(false);
 
 // Define your routes here
+$router->addPost(
+    '/login',
+    [
+        'controller' => 'user',
+        'action'     => 'login'
+    ]
+)->setName('login');
+
 $router->mount(new UserRoutes());
 
 // Establecer camino 404

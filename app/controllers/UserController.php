@@ -6,6 +6,38 @@ use Phalcon\Paginator\Adapter\Model as PaginatorModel;
 
 class UserController extends ControllerBase
 {
+    
+    public function loginAction() {
+        //$this->view->pick('index/index');
+        $body       = $this->request->getJsonRawBody();
+        $email      = $body->email;
+        $password   = $body->password;
+
+        $user = User::findFirst(
+            [
+                'email = :email: AND passwordl = :password:',
+                'bind' => [
+                    'email'     => $email,
+                    'password'  => $password
+                ]
+            ]
+        );
+        if ($user !== false) {
+            return $this->sendResponseHttp($user, false, 200, 'Login');
+        } else {
+            $user = new User();
+            if (!strlen($email) > 0) {
+                $user->addMessage('El emial es obligatorio', 'email', 'identifier');
+            }
+            if (!strlen($password) > 0) {
+                $user->addMessage('El password es obligatorio', 'email', 'identifier');
+            }
+            $user->addMessage('Email/Password incorrectos', 'login', 'identifier');
+            $messages = $this->interpretMessages($user->getMessages());
+            return $this->sendResponseHttp($messages, true, 404, 'Not login');
+        }
+    }
+
     public function listAction() {
         $this->getDataPaginator();
 
@@ -19,6 +51,8 @@ class UserController extends ControllerBase
             ]
         );
         $page = $paginator->getPaginate();
+        //die(var_dump($this->request->getHTTPReferer()));
+        //die(var_dump();
         return $this->sendResponseHttp($page);
     }
 
