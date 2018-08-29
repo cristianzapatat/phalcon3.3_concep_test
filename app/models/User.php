@@ -1,6 +1,7 @@
 <?php
 
 use Phalcon\Mvc\Model;
+use Phalcon\Mvc\Model\Message;
 use Phalcon\Validation;
 use Phalcon\Validation\Validator\Email as EmailValidator;
 use Phalcon\Validation\Validator\Uniqueness;
@@ -95,6 +96,11 @@ class User extends Model
         return $this->passwordl;
     }
 
+    public function beforeSave()
+    {   
+        
+    }
+
     /**
      * Validations and business logic
      *
@@ -109,7 +115,7 @@ class User extends Model
             new EmailValidator(
                 [
                     'model'   => $this,
-                    'message' => 'Por favor ingrese un correo valido',
+                    'message' => 'Por favor ingrese un correo valido'
                 ]
             )
         );
@@ -124,19 +130,30 @@ class User extends Model
             )
         );
 
-        if ($this->getEmail === "Old") {
+        if (strlen($this->getPasswordl()) < 10) {
             $message = new Message(
-                "Sorry, old robots are not allowed anymore",
-                "type",
-                "MyType"
+                "Contraseña demasiado corta",
+                "password",
+                "length"
             );
-
             $this->appendMessage($message);
-
-            return false;
         }
 
-        return $this->validate($validator);
+        $statusValidate = $this->validate($validator);
+        $countMessages = count(parent::getMessages());
+        
+        return ($statusValidate && $countMessages === 0);
+    }
+
+    public function addMessage($message = '', $field = null, $type = null) {
+        if (strlen($message) > 0) {
+            $this->appendMessage(new Message(
+                    $message,
+                    $field,
+                    $type
+                )
+            );
+        }
     }
 
     /**

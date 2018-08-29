@@ -8,9 +8,9 @@ class UserController extends ControllerBase
 {
     public function listAction() {
         $this->getDataPaginator();
-        // The data set to paginate
+
         $users  = User::find();
-        // Create a Model paginator
+        
         $paginator = new PaginatorModel(
             [
                 'data'  => $users,
@@ -22,6 +22,32 @@ class UserController extends ControllerBase
         return $this->sendResponseHttp($page);
     }
 
+    private function getUser($id = null) {
+        if (!is_null($id) && strlen($id) > 0) {
+            $user = User::findFirst($id);
+            if ($user !== false) {
+                return $user;
+            } else {
+                return null;
+            }        
+        } else {
+            $user = new User();
+            $user->addMessage('El Id es obligatorio', 'id', 'identifier');
+            $messages = $this->interpretMessages($user->getMessages());
+            return $this->sendResponseHttp($messages, true, 409, 'Not Content');
+        }
+    }
+
+    public function getAction($id = null) {
+        $user = $this->getUser($id);
+        if (!is_null($user) && $user instanceof User) {
+            return $this->sendResponseHttp($user);
+        } else if (is_null($user)) {
+            return $this->sendResponseHttp(array());
+        }
+        return $user;
+    }
+
     public function saveAction() {
         $body = $this->request->getJsonRawBody();
 
@@ -29,11 +55,48 @@ class UserController extends ControllerBase
         $user->email = $body->email;
         $user->passwordl = $body->pass;
 
-        if ($user->save()) {
+        // $user->save()
+        if ($user->create() === true) {
             return $this->sendResponseHttp($user);
         } else {
-            return $this->sendResponseHttp($user->getMessages(), true, 409, 'SQL');
+            $messages = $this->interpretMessages($user->getMessages());
+            return $this->sendResponseHttp($messages, true, 409, 'SQL');
         }
+    }
+
+    public function editAction() {
+        $body = $this->request->getJsonRawBody();
+
+        $user = new User();
+        $user->setId($body->id); 
+        $user->setEmail($body->email);
+        $user->SetPasswordl($body->pass);
+
+        if ($user->update() === true) {
+            return $this->sendResponseHttp($user);
+        } else {
+            $messages = $this->interpretMessages($user->getMessages());
+            return $this->sendResponseHttp($messages, true, 409, 'SQL');
+        }
+    }
+
+    public function deleteAction() {
+        $body = $this->request->getJsonRawBody();
+        $user = $this->getUser(isset($body->id) ? $body->id : null);
+        if (!is_null($user) && $user instanceof User) {
+            if ($user->delete() !== false) {
+                return $this->sendResponseHttp($user, false, 200, 'Ok');
+            } else {
+                $messages = $this->interpretMessages($user->getMessages());
+                return $this->sendResponseHttp($messages, true, 409, 'SQL');
+            }
+        } else if (is_null($user)) {
+            $user = new User();
+            $user->addMessage('El usuario no existe', 'user', 'delete');
+            $messages = $this->interpretMessages($user->getMessages());
+            return $this->sendResponseHttp($messages, true, 409, 'Not action');
+        }
+        return $user; 
     }
 
     public function indexAction() {

@@ -1,5 +1,6 @@
 <?php
 
+use Phalcon\Mvc\Model\Message;
 use Phalcon\Mvc\Controller;
 use Phalcon\Mvc\Dispatcher;
 use Phalcon\Http\Response;
@@ -72,5 +73,54 @@ class ControllerBase extends Controller
             $response->setStatusCode(204, 'Not Content');
         }
         return $response;
+    }
+
+    public function interpretMessages($messages = null) {
+        if (is_null($messages)) {
+            return array();
+        } else {
+            $_messages = array();
+
+            foreach ($messages as $key => $message) {
+                switch ($message->getType()) {
+                    case 'InvalidCreateAttempt':
+                        $messages[] = new Message(
+                            'El registro no puede ser creado porque ya existe',
+                            $message->getField(),
+                            $message->getType()
+                        );
+                        unset($messages[$key]);
+                        break;
+    
+                    case 'InvalidUpdateAttempt':
+                        $messages[] = new Message(
+                            'El registro no puede ser actualizado porque no existe',
+                            $message->getField(),
+                            $message->getType()
+                        );
+                        unset($messages[$key]);
+                        break;
+    
+                    case 'PresenceOf':
+                        $messages[] = new Message(
+                            'El campo ' . $message->getField() . ' es obligatorio',
+                            $message->getField(),
+                            $message->getType()
+                        );
+                        unset($messages[$key]);
+                        break;
+                }
+            }
+            
+            foreach ($messages as $message) {
+                $_messages[] = [
+                    'message'   => $message->getMessage(),
+                    'field'     => $message->getField(),
+                    'type'      => $message->getType()
+                ];
+            }
+
+            return $_messages;
+        }
     }
 }
