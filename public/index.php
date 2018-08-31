@@ -23,7 +23,7 @@ try {
     /**
      * Get config service for use in inline setup below
      */
-    $config = $di->getConfig();    
+    $config = $di->getConfig();
 
     /**
      * Include Autoloader

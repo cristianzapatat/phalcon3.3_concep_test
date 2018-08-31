@@ -1,47 +1,67 @@
 <?php
 
 use Phalcon\Paginator\Factory;
-
 use Phalcon\Paginator\Adapter\Model as PaginatorModel;
 
 class UserController extends ControllerBase
 {
-    
-    public function loginAction() {
+
+     public function loginAction() {
         //$this->view->pick('index/index');
         $body       = $this->request->getJsonRawBody();
         $email      = $body->email;
         $password   = $body->password;
+        $type       = isset($body->type) ? (string) $body->type : '0';
+        $type       = ($type === '1') ? $type : '0';
+        $validate   = false;
 
-        $user = User::findFirst(
-            [
-                'email = :email: AND passwordl = :password:',
-                'bind' => [
-                    'email'     => $email,
-                    'password'  => $password
+        if (strlen($email) > 0 && strlen($password) > 0) {
+            $user = User::findFirst(
+                [
+                    'email = :email:',
+                    'bind' => [
+                        'email' => $email
+                    ]
                 ]
-            ]
-        );
-        if ($user !== false) {
-            return $this->sendResponseHttp($user, false, 200, 'Login');
-        } else {
-            $user = new User();
-            if (!strlen($email) > 0) {
-                $user->addMessage('El emial es obligatorio', 'email', 'identifier');
+            );
+            if ($user !== false) {
+                $pass = $this->common->decode($user->passwordl);
+                if ($pass === $password) {
+                    $token = $this->common->createToken($user, $type);
+                    if (!is_null($token)) {
+                        $result = array(
+                            'user'  => array(
+                                'id'    => $user->id,
+                                'email' => $user->email
+                            ),
+                            'token' => $token
+                        );
+                        return $this->sendResponseHttp($result, false, 200, 'Login');
+                    }
+                }
             }
-            if (!strlen($password) > 0) {
-                $user->addMessage('El password es obligatorio', 'email', 'identifier');
-            }
-            $user->addMessage('Email/Password incorrectos', 'login', 'identifier');
-            $messages = $this->interpretMessages($user->getMessages());
-            return $this->sendResponseHttp($messages, true, 404, 'Not login');
+            $validate = true;
         }
+        $user = new User();
+        if (!strlen($email) > 0) {
+            $user->addMessage('El emial es obligatorio', 'email', 'identifier');
+        }
+        if (!strlen($password) > 0) {
+            $user->addMessage('El password es obligatorio', 'email', 'identifier');
+        }
+        if ($validate) {
+            $user->addMessage('Email/Password incorrectos', 'login', 'identifier');
+        }
+        $messages = $this->interpretMessages($user->getMessages());
+        return $this->sendResponseHttp($messages, true, 404, 'Not login');
     }
 
     public function listAction() {
         $this->getDataPaginator();
 
-        $users  = User::find();
+        $users  = User::find(array(
+            'columns' => 'id, email'
+        ));
         
         $paginator = new PaginatorModel(
             [
@@ -51,8 +71,6 @@ class UserController extends ControllerBase
             ]
         );
         $page = $paginator->getPaginate();
-        //die(var_dump($this->request->getHTTPReferer()));
-        //die(var_dump();
         return $this->sendResponseHttp($page);
     }
 
@@ -75,7 +93,12 @@ class UserController extends ControllerBase
     public function getAction($id = null) {
         $user = $this->getUser($id);
         if (!is_null($user) && $user instanceof User) {
-            return $this->sendResponseHttp($user);
+            return $this->sendResponseHttp(array(
+                'user'  => array(
+                    'id'    => $user->id,
+                    'email' => $user->email
+                )
+            ));
         } else if (is_null($user)) {
             return $this->sendResponseHttp(array());
         }
@@ -91,7 +114,14 @@ class UserController extends ControllerBase
 
         // $user->save()
         if ($user->create() === true) {
-            return $this->sendResponseHttp($user);
+            $user->passwordl = $this->common->encode($user->passwordl . '');
+            $user->save();
+            return $this->sendResponseHttp(array(
+                'user'  => array(
+                    'id'    => $user->id,
+                    'email' => $user->email
+                )
+            ));
         } else {
             $messages = $this->interpretMessages($user->getMessages());
             return $this->sendResponseHttp($messages, true, 409, 'SQL');
@@ -107,7 +137,14 @@ class UserController extends ControllerBase
         $user->SetPasswordl($body->pass);
 
         if ($user->update() === true) {
-            return $this->sendResponseHttp($user);
+            $user->passwordl = $this->common->encode($user->passwordl . '');
+            $user->save();
+            return $this->sendResponseHttp(array(
+                'user'  => array(
+                    'id'    => $user->id,
+                    'email' => $user->email
+                )
+            ));
         } else {
             $messages = $this->interpretMessages($user->getMessages());
             return $this->sendResponseHttp($messages, true, 409, 'SQL');
@@ -119,7 +156,12 @@ class UserController extends ControllerBase
         $user = $this->getUser(isset($body->id) ? $body->id : null);
         if (!is_null($user) && $user instanceof User) {
             if ($user->delete() !== false) {
-                return $this->sendResponseHttp($user, false, 200, 'Ok');
+                return $this->sendResponseHttp(array(
+                    'user'  => array(
+                        'id'    => $user->id,
+                        'email' => $user->email
+                    )
+                ), false, 200, 'Ok');
             } else {
                 $messages = $this->interpretMessages($user->getMessages());
                 return $this->sendResponseHttp($messages, true, 409, 'SQL');

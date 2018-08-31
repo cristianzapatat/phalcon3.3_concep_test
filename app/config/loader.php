@@ -13,4 +13,11 @@ $loader->registerDirs(
     ]
 );
 
+$loader->registerNamespaces(
+    [
+        'Utilities' => $config->application->utilitiesDir,
+        'App\Model' => $config->application->modelsDir
+    ]
+);
+
 $loader->register();

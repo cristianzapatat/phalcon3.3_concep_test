@@ -23,6 +23,7 @@ return new \Phalcon\Config([
         'modelsDir'      => APP_PATH . '/models/',
         'migrationsDir'  => APP_PATH . '/migrations/',
         'viewsDir'       => APP_PATH . '/views/',
+        'utilitiesDir'   => APP_PATH . '/utilities/',
         'pluginsDir'     => APP_PATH . '/plugins/',
         'libraryDir'     => APP_PATH . '/library/',
         'cacheDir'       => BASE_PATH . '/cache/',
@@ -31,5 +32,10 @@ return new \Phalcon\Config([
         // of the webpspace.  This will break if the public/index.php entry point is moved or
         // possibly if the web server rewrite rules are changed. This can also be set to a static path.
         'baseUri'        => preg_replace('/public([\/\\\\])index.php$/', '', $_SERVER["PHP_SELF"]),
+    ],
+    'crypt' => [
+        'cipher'    => 'aes-256-ctr',
+        'key'       => 'i$1^&/:%2@a1!R1Q<@{(e@*!<7u|R2~0',
+        'separator' => '&*&'
     ]
 ]);

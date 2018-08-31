@@ -101,6 +101,10 @@ class User extends Model
         
     }
 
+    public function afterSave() {
+        
+    }
+
     /**
      * Validations and business logic
      *
