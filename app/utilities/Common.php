@@ -9,6 +9,8 @@ use DateInterval;
 
 class Common {
 
+    protected $FORMAT_TIME  = 'Y-m-d H:i:s';
+    protected $INCREASE      = 'PT10M';
     protected $crypt;
     protected $config;
 
@@ -20,6 +22,12 @@ class Common {
 
     public function setConfig($_config = null) {
         if (!is_null($_config)) {
+            if (isset($_config->common->format) && strlen($_config->common->format) > 0) {
+                $this->FORMAT_TIME = $_config->common->format;
+            }
+            if (isset($_config->common->increase) && strlen($_config->common->increase) > 0) {
+                $this->INCREASE = $_config->common->increase;
+            }
             $this->config = $_config;
         }
     }
@@ -52,8 +60,8 @@ class Common {
             $token->setId($user->id);
             $token->setType($type);
             $token->setToken($tok);
-            $token->setCreateAt($date->format('Y-m-d H:i:s'));
-            $token->setExpireAt($date->add(new DateInterval('PT10M'))->format('Y-m-d H:i:s'));
+            $token->setCreateAt($date->format($this->FORMAT_TIME));
+            $token->setExpireAt($date->add(new DateInterval($this->INCREASE))->format($this->FORMAT_TIME));
 
             if ($token->save() !== false) {
                 return $tok;
@@ -64,34 +72,61 @@ class Common {
 
     public function updateToken($tok = '') {
         if (strlen($tok) > 0) {
-            $_tok = $tok;
-            $tok = $this->decode($tok);
-            $tok = explode($this->config->crypt->separator, $tok);
+            $_tok = $this->decode($tok);
+            $_tok = explode($this->config->crypt->separator, $_tok);
 
-            $token = Token::findFirst(
-                [
-                    'id = :id: AND type = :type:',
-                    'bind' => [
-                        'id'   => $tok[0],
-                        'type' => $tok[2]
+            if (count($_tok) == 3) {
+                $token = Token::findFirst(
+                    [
+                        'id = :id: AND type = :type:',
+                        'bind' => [
+                            'id'   => $_tok[0],
+                            'type' => $_tok[2]
+                        ]
                     ]
-                ]
-            );
-            if ($token !== false) {
-                $date   = new DateTime();
-                $token->setExpireAt($date->add(new DateInterval('PT10M'))->format('Y-m-d H:i:s'));
-
-                if ($token->save() !== false) {
-                    return $tok;
+                );
+                if ($token !== false) {
+                    $date   = new DateTime();
+                    $token->setExpireAt($date->add(new DateInterval($this->INCREASE))->format($this->FORMAT_TIME));
+    
+                    if ($token->save() !== false) {
+                        return $tok;
+                    }
                 }
             }
         }
         return null;
     }
 
-    public function validateToken($token = '') {
-        if (strlen($token) > 0) {
-            
+    public function validateToken($tok = '') {
+        if (strlen($tok) > 0) {
+            $_tok = $this->decode($tok);
+            $_tok = explode($this->config->crypt->separator, $_tok);
+
+            if (count($_tok) == 3) {
+                $token = Token::findFirst(
+                    [
+                        'id = :id: AND type = :type:',
+                        'bind' => [
+                            'id'   => $_tok[0],
+                            'type' => $_tok[2]
+                        ]
+                    ]
+                );
+                if ($token !== false) {
+                    $expire = DateTime::createFromFormat($this->FORMAT_TIME, $token->getExpireAt());
+                    $date   = new DateTime();
+
+                    if ($expire->getTimestamp() >= $date->getTimestamp()) {
+                        $status = $this->updateToken($tok);
+
+                        if (!is_null($status)) {
+                            return true;
+                        }
+                    }
+                }
+            }
         }
+        return false;
     }
 }

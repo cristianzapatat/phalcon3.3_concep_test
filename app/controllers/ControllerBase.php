@@ -11,7 +11,19 @@ class ControllerBase extends Controller
      * Función que se ejecuta ANTES de ingresar al método del Controlador.
      */
     public function beforeExecuteRoute(Dispatcher $dispatcher) {
-
+        $authorizeException = (array)$this->config->authorizeException;
+        if (!in_array($this->router->getMatchedRoute()->getName(), $authorizeException)) {
+            if (!$this->isAuthorize()) {
+                $this->view->disable();
+                $this->response =  $this->sendResponseHttp(array(
+                    'status' => 'error',
+                    'message' => 'Access denied'
+                ), false, 401, 'Unauthorized');
+                $this->response->setContentType('application/json');                
+                $this->response->send();
+                return false;
+            }
+        }
     }
 
     /**
@@ -35,7 +47,7 @@ class ControllerBase extends Controller
             $page = 1;
         }
         $this->limit = $limit;
-        $this->páge = $page;
+        $this->page = $page;
     }
 
     /**
@@ -122,5 +134,14 @@ class ControllerBase extends Controller
 
             return $_messages;
         }
+    }
+
+    public function isAuthorize($token = '') {
+        $token = ($this->request->getHeader('Authorization') !== null) ? $this->request->getHeader('Authorization') : $token;
+        if (isset($token) && strlen($token) > 0) {
+            $status = $this->common->validateToken($token);
+            return $status;
+        }   
+        return false;
     }
 }

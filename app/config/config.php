@@ -37,5 +37,13 @@ return new \Phalcon\Config([
         'cipher'    => 'aes-256-ctr',
         'key'       => 'i$1^&/:%2@a1!R1Q<@{(e@*!<7u|R2~0',
         'separator' => '&*&'
+    ],
+    'common' => [
+        'format'    => 'Y-m-d H:i:s',
+        'increase'   => 'PT20M'
+    ],
+    'authorizeException' => [
+        'login',
+        'register'
     ]
 ]);
